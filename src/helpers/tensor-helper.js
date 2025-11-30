@@ -26,13 +26,14 @@ export const getModel = async () => {
 
 export const convertBase64ToTensor = async (base64) => {
   try {
-       const uIntArray = Base64Binary.decode(base64);
-       // decode a JPEG-encoded image to a 3D Tensor of dtype
-       const decodedImage = decodeJpeg(uIntArray, 3); // [H,W,3]
-       // Resize to 224x224
-       const resized = tf.image.resizeBilinear(decodedImage, [224, 224]);
-       // Reshape to [1,224,224,3]
-       return resized.reshape([1, 224, 224, 3]);
+      const uIntArray = Base64Binary.decode(base64);
+      // decode a JPEG-encoded image to a 3D Tensor of dtype
+      const decodedImage = decodeJpeg(uIntArray, 3); // [H,W,3]
+      // Resize to 224x224
+      const resized = tf.image.resizeBilinear(decodedImage, [224, 224]);
+      // Reshape to [1,224,224,3]
+      const normalized = resized.div(tf.scalar(255));
+      return normalized.reshape([1, 224, 224, 3]);
   } catch (error) {
     console.log('Could not convert base64 string to tesor', error);
   }
