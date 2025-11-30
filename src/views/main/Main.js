@@ -6,6 +6,7 @@ import {
   Pressable,
   Modal,
   Text,
+  Image,
   ActivityIndicator,
 } from 'react-native';
 
@@ -18,12 +19,13 @@ import {cropPicture} from '../../helpers/image-helper';
 
 import {Camera} from 'expo-camera';
 
-const RESULT_MAPPING = ['Triangle', 'Circle', 'Square'];
+const RESULT_MAPPING = ['Has Face', 'Has No Face'];
 
 const Main = () => {
   const cameraRef = useRef();
   const [isProcessing, setIsProcessing] = useState(false);
   const [presentedShape, setPresentedShape] = useState('');
+  const [modalImageUri, setModalImageUri] = useState(null);
 
   const handleImageCapture = async () => {
     setIsProcessing(true);
@@ -35,10 +37,13 @@ const Main = () => {
 
   const processImagePrediction = async (base64Image) => {
     const croppedData = await cropPicture(base64Image, 300);
+    setModalImageUri(croppedData.uri); // Save image URI for modal
     const model = await getModel();
     const tensor = await convertBase64ToTensor(croppedData.base64);
 
     const prediction = await startPrediction(model, tensor);
+
+    console.log('Prediction Result: ', prediction);
 
     const highestPrediction = prediction.indexOf(
       Math.max.apply(null, prediction),
@@ -52,12 +57,22 @@ const Main = () => {
         <View style={styles.modal}>
           <View style={styles.modalContent}>
             <Text>Your current shape is {presentedShape}</Text>
+            {modalImageUri && (
+              <View style={{marginVertical: 10}}>
+                <Image
+                  source={{ uri: modalImageUri }}
+                  style={{ width: 96, height: 96, borderRadius: 8 }}
+                  resizeMode="contain"
+                />
+              </View>
+            )}
             {presentedShape === '' && <ActivityIndicator size="large" />}
             <Pressable
               style={styles.dismissButton}
               onPress={() => {
                 setPresentedShape('');
                 setIsProcessing(false);
+                setModalImageUri(null);
               }}>
               <Text>Dismiss</Text>
             </Pressable>

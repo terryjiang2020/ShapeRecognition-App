@@ -3,7 +3,7 @@ import '@tensorflow/tfjs-react-native';
 import {bundleResourceIO, decodeJpeg} from '@tensorflow/tfjs-react-native';
 
 import {Base64Binary} from '../utils/utils';
-const BITMAP_DIMENSION = 224;
+import {BITMAP_DIMENSION} from './image-helper';
 
 const modelJson = require('../model/model.json');
 const modelWeights = require('../model/weights.bin');
@@ -26,16 +26,13 @@ export const getModel = async () => {
 
 export const convertBase64ToTensor = async (base64) => {
   try {
-    const uIntArray = Base64Binary.decode(base64);
-    // decode a JPEG-encoded image to a 3D Tensor of dtype
-    const decodedImage = decodeJpeg(uIntArray, 3);
-    // reshape Tensor into a 4D array
-    return decodedImage.reshape([
-      1,
-      BITMAP_DIMENSION,
-      BITMAP_DIMENSION,
-      TENSORFLOW_CHANNEL,
-    ]);
+       const uIntArray = Base64Binary.decode(base64);
+       // decode a JPEG-encoded image to a 3D Tensor of dtype
+       const decodedImage = decodeJpeg(uIntArray, 3); // [H,W,3]
+       // Resize to 224x224
+       const resized = tf.image.resizeBilinear(decodedImage, [224, 224]);
+       // Reshape to [1,224,224,3]
+       return resized.reshape([1, 224, 224, 3]);
   } catch (error) {
     console.log('Could not convert base64 string to tesor', error);
   }
@@ -45,6 +42,7 @@ export const startPrediction = async (model, tensor) => {
   try {
     // predict against the model
     const output = await model.predict(tensor);
+    console.log('Prediction Output: ', output);
     // return typed array
     return output.dataSync();
   } catch (error) {
